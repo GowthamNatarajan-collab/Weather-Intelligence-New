@@ -33,14 +33,17 @@ The Gemini SDK requires Node.js APIs. You must enable the Node.js compatibility 
 3. Add the `nodejs_compat` flag for both **Production** and **Preview**.
 
 ## 4. Troubleshooting: "Unexpected token '<'" Error
-If you see this error, it means the API request is returning HTML (likely your `index.html`) instead of JSON. This happens if:
-- **Functions are not deployed**: Ensure the `functions` folder is at the root of your GitHub repository.
-- **Node.js compatibility is missing**: Ensure you have added the `nodejs_compat` flag in Cloudflare settings (see Step 3).
-- **Build Output Directory**: Ensure your build output directory is set to `dist` and NOT the root.
+If you see this error, it means the API request is returning HTML (likely your `index.html`) instead of JSON. This happens if Cloudflare cannot find or execute your functions.
 
-**Important**: You must trigger a **new deployment** (e.g., push a small change to GitHub) after changing these settings for them to take effect.
+**Required Checks**:
+- **Functions Folder Location**: Ensure the `functions` folder is at the absolute **root of your repository**, not inside `src` or `public`.
+- **Node.js compatibility**: Ensure you have added the `nodejs_compat` flag in Cloudflare settings (see Step 3).
+- **Commit & Push**: Cloudflare Pages only sees code that has been **pushed to GitHub**. Make sure you have committed the `functions/api/weather.ts` file.
+- **Trigger Redeploy**: If you changed settings (like flags or variables), you **MUST** push a new commit or click "Retry deployment" in Cloudflare to apply them.
 
-## 4. Verification
+**Tip**: The `/api/weather.ts` function has been refactored to use the REST API directly, making it highly compatible with the Cloudflare runtime.
+
+## 5. Verification
 Once the build completes:
 1. Open the provided `*.pages.dev` URL.
 2. Search for a city (e.g., "Paris").

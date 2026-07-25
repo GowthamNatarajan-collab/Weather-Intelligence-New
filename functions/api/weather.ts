@@ -1,5 +1,3 @@
-import { GoogleGenAI, Type } from "@google/genai";
-
 const getWeatherDescription = (code: number) => {
   const codes: Record<number, { text: string; icon: string }> = {
     0: { text: "Clear sky", icon: "Sun" },
@@ -99,43 +97,48 @@ export async function onRequestGet(context: any) {
     const apiKey = env.GEMINI_API_KEY;
 
     if (apiKey) {
-      const ai = new GoogleGenAI({
-        apiKey,
-        httpOptions: {
-          headers: {
-            "User-Agent": "aistudio-build",
-          },
-        },
-      });
-
       const prompt = `Based on the following weather in ${name}, ${country}:
 Current Temp: ${formattedData.current.temp}°C, ${formattedData.current.description}.
 Humidity: ${formattedData.current.humidity}%, Wind: ${formattedData.current.windSpeed} km/h.
 7-day forecast shows max temps around ${formattedData.forecast[0].tempMax}°C and min around ${formattedData.forecast[0].tempMin}°C.
 Provide exactly 4 specific planning recommendations for today and the week.
-Return the result as a JSON array of objects with 'category', 'advice', and 'icon' fields.`;
+Return the result as a JSON array of objects with 'category', 'advice', and 'icon' (Lucide icon name like 'Shirt', 'Coffee', 'Car') fields.`;
 
-      const aiResponse = await ai.models.generateContent({
-        model: "gemini-1.5-flash",
-        contents: [{ parts: [{ text: prompt }] }],
-        config: {
-          responseMimeType: "application/json",
-          responseSchema: {
-            type: Type.ARRAY,
-            items: {
-              type: Type.OBJECT,
-              properties: {
-                category: { type: Type.STRING },
-                advice: { type: Type.STRING },
-                icon: { type: Type.STRING },
-              },
-              required: ["category", "advice", "icon"],
-            },
+      const response = await fetch(
+        `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${apiKey}`,
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
           },
-        },
-      });
+          body: JSON.stringify({
+            contents: [{ parts: [{ text: prompt }] }],
+            generationConfig: {
+              responseMimeType: "application/json",
+              responseSchema: {
+                type: "ARRAY",
+                items: {
+                  type: "OBJECT",
+                  properties: {
+                    category: { type: "STRING" },
+                    advice: { type: "STRING" },
+                    icon: { type: "STRING" },
+                  },
+                  required: ["category", "advice", "icon"],
+                },
+              },
+            },
+          }),
+        }
+      );
 
-      recommendations = JSON.parse(aiResponse.text || "[]");
+      if (response.ok) {
+        const aiData: any = await response.json();
+        const text = aiData.candidates?.[0]?.content?.parts?.[0]?.text;
+        recommendations = JSON.parse(text || "[]");
+      } else {
+        console.error("Gemini API error:", await response.text());
+      }
     }
 
     return new Response(
