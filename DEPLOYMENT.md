@@ -17,13 +17,28 @@ Follow these steps to deploy the **Weather Intelligence** app from Google AI Stu
    - **Build output directory**: `dist`
 5. Click **Save and Deploy**.
 
-## 3. Configure Environment Variables (CRITICAL)
-For the AI recommendations to work, you must provide your Gemini API key to the Cloudflare environment:
+## 3. Configure Cloudflare Settings (CRITICAL)
+For the app to run correctly on Cloudflare, you must configure both Environment Variables and Runtime settings:
+
+### Environment Variables
 1. In your Cloudflare Pages project, go to **Settings** > **Variables and Secrets**.
 2. Under **Environment variables**, click **Add variable**.
 3. Variable Name: `GEMINI_API_KEY`
 4. Value: *[Your Google AI Studio API Key]*
-5. **Important**: You must trigger a **new deployment** after adding this variable for it to take effect.
+
+### Runtime Settings (Node.js Compatibility)
+The Gemini SDK requires Node.js APIs. You must enable the Node.js compatibility flag:
+1. Go to **Settings** > **Functions**.
+2. Find **Compatibility flags**.
+3. Add the `nodejs_compat` flag for both **Production** and **Preview**.
+
+## 4. Troubleshooting: "Unexpected token '<'" Error
+If you see this error, it means the API request is returning HTML (likely your `index.html`) instead of JSON. This happens if:
+- **Functions are not deployed**: Ensure the `functions` folder is at the root of your GitHub repository.
+- **Node.js compatibility is missing**: Ensure you have added the `nodejs_compat` flag in Cloudflare settings (see Step 3).
+- **Build Output Directory**: Ensure your build output directory is set to `dist` and NOT the root.
+
+**Important**: You must trigger a **new deployment** (e.g., push a small change to GitHub) after changing these settings for them to take effect.
 
 ## 4. Verification
 Once the build completes:

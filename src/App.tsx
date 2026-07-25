@@ -20,15 +20,26 @@ export default function App() {
     setError(null);
     try {
       const response = await fetch(`/api/weather?city=${encodeURIComponent(searchCity)}`);
+      const contentType = response.headers.get("content-type");
+
       if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.error || "Failed to fetch weather");
+        if (contentType?.includes("application/json")) {
+          const errorData = await response.json();
+          throw new Error(errorData.error || `Error ${response.status}: Failed to fetch weather`);
+        }
+        throw new Error(`API failed with status ${response.status}. This usually means the backend route was not found or failed.`);
       }
+
+      if (!contentType?.includes("application/json")) {
+        throw new Error("Received an unexpected HTML response. Ensure your Cloudflare Functions are deployed correctly in the /functions directory.");
+      }
+
       const data: WeatherResponse = await response.json();
       setWeather(data.weather);
       setRecommendations(data.recommendations);
     } catch (err: any) {
-      setError(err.message);
+      console.error("Weather fetch error:", err);
+      setError(err.message || "An unexpected error occurred");
     } finally {
       setLoading(false);
     }
