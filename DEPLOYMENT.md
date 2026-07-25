@@ -1,54 +1,34 @@
-# Cloudflare Pages Deployment Guide
+# Cloudflare Pages Deployment Guide (FIXED)
 
-Follow these steps to deploy the **Weather Intelligence** app from Google AI Studio to Cloudflare Pages.
+The errors you encountered (`Unexpected token '<'` and `Unknown command: "wrangler"`) are due to using **Cloudflare Workers** instead of **Cloudflare Pages**. This app is designed for **Pages**.
 
-## 1. Export to GitHub
-1. In Google AI Studio, click on **Settings** (gear icon).
-2. Select **Export to GitHub**.
-3. Choose your repository name and complete the export process.
+## 1. Correct Dashboard Selection
+Do **NOT** create a "Worker". Instead:
+1. Go to **Workers & Pages** in your Cloudflare Dashboard.
+2. Click **Create application**.
+3. Select the **Pages** tab (this is critical).
+4. Click **Connect to Git** and select your repository.
 
-## 2. Connect to Cloudflare Pages
-1. Log in to your [Cloudflare Dashboard](https://dash.cloudflare.com/).
-2. Navigate to **Workers & Pages** > **Create application** > **Pages** > **Connect to Git**.
-3. Select the GitHub repository you just exported.
-4. **Build Settings**:
-   - **Framework preset**: `Vite` (or None).
-   - **Build command**: `npm run build`
-   - **Build output directory**: `dist`
-5. Click **Save and Deploy**.
+## 2. Build Configuration (CRITICAL)
+Use exactly these settings in the Cloudflare Dashboard:
+- **Framework preset**: `Vite`
+- **Build command**: `npm run build`
+- **Build output directory**: `dist`
+- **Root directory**: `/`
+- **Deploy command**: (Leave this **EMPTY**. Cloudflare Pages deploys automatically from the build output).
 
-## 3. Configure Cloudflare Settings (CRITICAL)
-For the app to run correctly on Cloudflare, you must configure both Environment Variables and Runtime settings:
+## 3. Resolve "Unexpected token '<'" (HTML instead of JSON)
+If you see this error, Cloudflare is serving `index.html` because it can't find your API.
+1. Ensure the `functions` folder is at the **root of your repository** (same level as `package.json`).
+2. **Compatibility Flag**: You **MUST** enable Node.js support for the Gemini API:
+   - Go to **Settings** > **Functions** > **Compatibility flags**.
+   - Add `nodejs_compat` to both **Production** and **Preview**.
 
-### Environment Variables
-1. In your Cloudflare Pages project, go to **Settings** > **Variables and Secrets**.
-2. Under **Environment variables**, click **Add variable**.
-3. Variable Name: `GEMINI_API_KEY`
-4. Value: *[Your Google AI Studio API Key]*
+## 4. Environment Variables
+1. Go to **Settings** > **Variables and Secrets**.
+2. Add `GEMINI_API_KEY` with your key from Google AI Studio.
 
-### Runtime Settings (Node.js Compatibility)
-The Gemini SDK requires Node.js APIs. You must enable the Node.js compatibility flag:
-1. Go to **Settings** > **Functions**.
-2. Find **Compatibility flags**.
-3. Add the `nodejs_compat` flag for both **Production** and **Preview**.
+## 5. Why "npm wrangler deploy" failed
+You should not put `npm wrangler deploy` in the dashboard's "Build command" or "Deploy command" fields. Cloudflare Pages handles the deployment internally once the `npm run build` finishes.
 
-## 4. Troubleshooting: "Unexpected token '<'" Error
-If you see this error, it means the API request is returning HTML (likely your `index.html`) instead of JSON. This happens if Cloudflare cannot find or execute your functions.
-
-**Required Checks**:
-- **Functions Folder Location**: Ensure the `functions` folder is at the absolute **root of your repository**, not inside `src` or `public`.
-- **Node.js compatibility**: Ensure you have added the `nodejs_compat` flag in Cloudflare settings (see Step 3).
-- **Commit & Push**: Cloudflare Pages only sees code that has been **pushed to GitHub**. Make sure you have committed the `functions/api/weather.ts` file.
-- **Trigger Redeploy**: If you changed settings (like flags or variables), you **MUST** push a new commit or click "Retry deployment" in Cloudflare to apply them.
-
-**Tip**: The `/api/weather.ts` function has been refactored to use the REST API directly, making it highly compatible with the Cloudflare runtime.
-
-## 5. Verification
-Once the build completes:
-1. Open the provided `*.pages.dev` URL.
-2. Search for a city (e.g., "Paris").
-3. Verify that:
-   - Current weather and location data appear.
-   - The 24h Trend chart renders.
-   - The 7-Day Outlook displays.
-   - **Intelligence Insights** (AI recommendations) generate successfully.
+**Final Step**: After updating these settings in the Cloudflare dashboard, you **must** trigger a new deployment by pushing a change to GitHub or clicking **Retry deployment** in the Cloudflare dashboard.

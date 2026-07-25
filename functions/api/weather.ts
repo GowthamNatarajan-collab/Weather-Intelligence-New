@@ -24,8 +24,14 @@ const getWeatherDescription = (code: number) => {
   return codes[code] || { text: "Unknown", icon: "Cloud" };
 };
 
-export async function onRequestGet(context: any) {
+export async function onRequest(context: any) {
   const { request, env } = context;
+  
+  // Only allow GET requests
+  if (request.method !== "GET") {
+    return new Response("Method Not Allowed", { status: 405 });
+  }
+
   const url = new URL(request.url);
   const city = url.searchParams.get("city");
 
