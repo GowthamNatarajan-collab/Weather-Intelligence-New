@@ -19,7 +19,8 @@ export default function App() {
     setLoading(true);
     setError(null);
     try {
-      const response = await fetch(`/api/weather?city=${encodeURIComponent(searchCity)}`);
+      const apiUrl = `/api/weather?city=${encodeURIComponent(searchCity)}`;
+      const response = await fetch(apiUrl);
       const contentType = response.headers.get("content-type");
 
       if (!response.ok) {
@@ -27,11 +28,12 @@ export default function App() {
           const errorData = await response.json();
           throw new Error(errorData.error || `Error ${response.status}: Failed to fetch weather`);
         }
-        throw new Error(`API failed with status ${response.status}. This usually means the backend route was not found or failed.`);
+        throw new Error(`API failed with status ${response.status}. The request to ${apiUrl} returned ${contentType || "unknown content"}.`);
       }
 
       if (!contentType?.includes("application/json")) {
-        throw new Error("Received an unexpected HTML response. Ensure your Cloudflare Functions are deployed correctly in the /functions directory.");
+        console.error("Non-JSON response received:", contentType);
+        throw new Error(`Received an unexpected ${contentType || "HTML"} response. This means Cloudflare is serving your static index.html instead of the API function. Please ensure the 'functions' folder is at the repository root and you have pushed your latest changes to GitHub.`);
       }
 
       const data: WeatherResponse = await response.json();
