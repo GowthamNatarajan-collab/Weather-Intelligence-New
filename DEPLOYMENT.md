@@ -1,41 +1,34 @@
-# Cloudflare Pages Deployment Guide
+# Cloudflare Pages Deployment Guide (FIXED)
 
-Follow these steps to deploy the **Weather Intelligence** app. **Important**: You must use **Cloudflare Pages**, not a standalone Worker.
+The errors you encountered (`Unexpected token '<'` and `Unknown command: "wrangler"`) are due to using **Cloudflare Workers** instead of **Cloudflare Pages**. This app is designed for **Pages**.
 
-## 1. Export to GitHub
-1. In Google AI Studio, click on **Settings** (gear icon) > **Export to GitHub**.
-2. Complete the export to a new or existing repository.
+## 1. Correct Dashboard Selection
+Do **NOT** create a "Worker". Instead:
+1. Go to **Workers & Pages** in your Cloudflare Dashboard.
+2. Click **Create application**.
+3. Select the **Pages** tab (this is critical).
+4. Click **Connect to Git** and select your repository.
 
-## 2. Connect to Cloudflare Pages (NOT Workers)
-1. Log in to your [Cloudflare Dashboard](https://dash.cloudflare.com/).
-2. Navigate to **Workers & Pages** > **Create application** > **Pages** (Select the Pages tab).
-3. Click **Connect to Git** and select your repository.
-4. **Build Settings**:
-   - **Framework preset**: `Vite`
-   - **Build command**: `npm run build`
-   - **Build output directory**: `dist`  <-- **CRITICAL: DO NOT LEAVE THIS EMPTY**
-5. Click **Save and Deploy**.
+## 2. Build Configuration (CRITICAL)
+Use exactly these settings in the Cloudflare Dashboard:
+- **Framework preset**: `Vite`
+- **Build command**: `npm run build`
+- **Build output directory**: `dist`
+- **Root directory**: `/`
+- **Deploy command**: (Leave this **EMPTY**. Cloudflare Pages deploys automatically from the build output).
 
-## 3. Critical Settings (Required for API to work)
-After the first deployment starts, go to your project settings:
+## 3. Resolve "Unexpected token '<'" (HTML instead of JSON)
+If you see this error, Cloudflare is serving `index.html` because it can't find your API.
+1. Ensure the `functions` folder is at the **root of your repository** (same level as `package.json`).
+2. **Compatibility Flag**: You **MUST** enable Node.js support for the Gemini API:
+   - Go to **Settings** > **Functions** > **Compatibility flags**.
+   - Add `nodejs_compat` to both **Production** and **Preview**.
 
-### Runtime Settings
-1. Go to **Settings** > **Functions** > **Compatibility flags**.
-2. Add `nodejs_compat` for both **Production** and **Preview**.
-
-### Environment Variables
+## 4. Environment Variables
 1. Go to **Settings** > **Variables and Secrets**.
-2. Add a variable:
-   - Name: `GEMINI_API_KEY`
-   - Value: *[Your Google AI Studio API Key]*
+2. Add `GEMINI_API_KEY` with your key from Google AI Studio.
 
-## 4. Trigger a Redeploy
-Cloudflare only applies flags and variables on a **new build**. 
-1. Go to the **Deployments** tab.
-2. Click the three dots `...` next to your latest deployment.
-3. Select **Retry deployment**.
+## 5. Why "npm wrangler deploy" failed
+You should not put `npm wrangler deploy` in the dashboard's "Build command" or "Deploy command" fields. Cloudflare Pages handles the deployment internally once the `npm run build` finishes.
 
-## 5. Verification
-Your app will be available at `https://[project-name].pages.dev`.
-- If you see `index.html` content instead of weather data, double-check that the `functions` folder is at the root of your GitHub repo.
-- If you see a "Node.js" error, check that the `nodejs_compat` flag is active.
+**Final Step**: After updating these settings in the Cloudflare dashboard, you **must** trigger a new deployment by pushing a change to GitHub or clicking **Retry deployment** in the Cloudflare dashboard.
